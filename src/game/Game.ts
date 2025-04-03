@@ -7,7 +7,7 @@ import { createHouse } from './House'; // Import the house creation function
 import { InteractionPrompt } from './Utils'; // Import billboard CLASS
 import { InventoryManager } from './InventoryManager'; // Import inventory manager
 import { createHeldItemMesh, HeldItemType } from './HeldItem'; // Import type as well
-import { addSoilToPot, waterPotSoil } from './PlanterPot'; // Import soil and water functions
+import { addSoilToPot, waterPotSoil, addSeedToPot } from './PlanterPot'; // Import pot functions
 
 export class Game {
     private sceneManager: SceneManager;
@@ -112,6 +112,7 @@ export class Game {
 
         const holdingSoil = this.inventoryManager.getSelectedSlotIndex() === 0;
         const holdingWateringCan = this.inventoryManager.getSelectedSlotIndex() === 1;
+        const holdingSeedVial = this.inventoryManager.getSelectedSlotIndex() === 2;
 
         for (const intersect of intersects) {
             const obj = intersect.object;
@@ -142,6 +143,14 @@ export class Game {
                 else if (pot.userData.hasSoil && !pot.userData.isWatered && holdingWateringCan) {
                     this.currentlyHoveredPot = pot;
                     this.interactionPrompt.setText("(E): Water Soil");
+                    this.interactionPrompt.update(pot, 0.3);
+                    foundInteractable = true;
+                    break; // Found pot interaction
+                }
+                // Check for adding seed
+                else if (pot.userData.hasSoil && pot.userData.isWatered && !pot.userData.hasSeed && holdingSeedVial) {
+                    this.currentlyHoveredPot = pot;
+                    this.interactionPrompt.setText("(E): Add Seed");
                     this.interactionPrompt.update(pot, 0.3);
                     foundInteractable = true;
                     break; // Found pot interaction
@@ -221,6 +230,16 @@ export class Game {
                 this.interactionPrompt.hide(); // Hide prompt after successful interaction
                 // Optionally consume water/make can empty here
             }
+        }
+        // Check for adding seed
+        else if (this.currentlyHoveredPot && this.currentlyHoveredPot.userData.hasSoil && this.currentlyHoveredPot.userData.isWatered && !this.currentlyHoveredPot.userData.hasSeed && this.inventoryManager.getSelectedSlotIndex() === 2) {
+             if (addSeedToPot(this.currentlyHoveredPot)) {
+                 console.log("Added seed via E key");
+                 this.interactionPrompt.hide(); // Hide prompt after successful interaction
+                 // Optionally consume seed item here
+                 // this.inventoryManager.setItemIcon(2, null); // Example: remove icon
+                 // this.handleInventorySelection(null); // Deselect maybe?
+             }
         }
         // Add other 'E' key interactions here
     }

@@ -7,6 +7,7 @@ const height = 0.5;
 const wallThickness = 0.05;
 const innerRadiusTop = radiusTop - wallThickness;
 const innerBottomY = wallThickness;
+const soilHeightRatio = 0.8; // How full the pot is with soil
 
 // Soil colors
 const DRY_SOIL_COLOR = 0x5C4033;
@@ -39,7 +40,8 @@ export function createPlanterPot(
     potMesh.name = "planterPot";
     potMesh.userData = {
         hasSoil: false,
-        isWatered: false, // Add watered state
+        isWatered: false,
+        hasSeed: false, // Add seed state
         interactable: true
     };
 
@@ -55,18 +57,12 @@ export function addSoilToPot(potMesh: THREE.Mesh): boolean {
         return false;
     }
 
-    const soilHeight = (height - innerBottomY) * 0.8;
+    const soilHeight = (height - innerBottomY) * soilHeightRatio;
     const soilRadius = innerRadiusTop * 0.98;
     const soilGeometry = new THREE.CylinderGeometry(soilRadius, soilRadius, soilHeight, 16);
-
-    // Use DRY_SOIL_COLOR initially
-    const soilMaterial = new THREE.MeshStandardMaterial({
-        color: DRY_SOIL_COLOR,
-        side: THREE.DoubleSide
-    });
-
+    const soilMaterial = new THREE.MeshStandardMaterial({ color: DRY_SOIL_COLOR, side: THREE.DoubleSide });
     const soilMesh = new THREE.Mesh(soilGeometry, soilMaterial);
-    soilMesh.position.y = innerBottomY + soilHeight / 2;
+    soilMesh.position.y = innerBottomY + soilHeight / 2; // Position soil on inner bottom
     soilMesh.name = "potSoil";
     soilMesh.castShadow = true;
     soilMesh.receiveShadow = true;
@@ -79,7 +75,6 @@ export function addSoilToPot(potMesh: THREE.Mesh): boolean {
 
 /**
  * Waters the soil in a given planter pot mesh.
- * Changes the soil color and updates userData.
  */
 export function waterPotSoil(potMesh: THREE.Mesh): boolean {
     if (!potMesh || potMesh.name !== "planterPot" || !potMesh.userData.hasSoil || potMesh.userData.isWatered) {
@@ -93,9 +88,44 @@ export function waterPotSoil(potMesh: THREE.Mesh): boolean {
         return false;
     }
 
-    // Change soil color to wet
     soilMesh.material.color.setHex(WET_SOIL_COLOR);
-    potMesh.userData.isWatered = true; // Update state
+    potMesh.userData.isWatered = true;
     console.log("Pot watered:", potMesh.uuid);
+    return true;
+}
+
+/**
+ * Adds a seed mesh to the soil in a planter pot.
+ */
+export function addSeedToPot(potMesh: THREE.Mesh): boolean {
+    if (!potMesh || potMesh.name !== "planterPot" || !potMesh.userData.hasSoil || !potMesh.userData.isWatered || potMesh.userData.hasSeed) {
+        console.warn("Cannot add seed: Pot needs watered soil or already has a seed.");
+        return false;
+    }
+
+    const soilMesh = potMesh.getObjectByName("potSoil") as THREE.Mesh;
+    if (!soilMesh) {
+        console.error("Soil mesh not found in pot when adding seed.");
+        return false;
+    }
+
+    // Simple green sphere for the seed
+    const seedRadius = 0.03;
+    const seedGeometry = new THREE.SphereGeometry(seedRadius, 8, 8);
+    const seedMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 }); // Bright green
+
+    const seedMesh = new THREE.Mesh(seedGeometry, seedMaterial);
+    // Position seed on top center of the soil mesh
+    const soilHeight = (height - innerBottomY) * soilHeightRatio;
+    seedMesh.position.y = innerBottomY + soilHeight + seedRadius * 0.5; // Place just above soil surface
+    seedMesh.position.x = 0; // Center horizontally
+    seedMesh.position.z = 0; // Center depth-wise
+    seedMesh.name = "potSeed";
+    seedMesh.castShadow = true;
+
+    // Add seed as a child of the pot (or soil mesh, depending on preference)
+    potMesh.add(seedMesh);
+    potMesh.userData.hasSeed = true; // Update state
+    console.log("Seed added to pot:", potMesh.uuid);
     return true;
 }
