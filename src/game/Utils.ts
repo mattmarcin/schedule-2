@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /**
- * Creates a canvas texture with text.
+ * Creates a canvas texture with text. (Internal helper)
  */
 function createTextTexture(text: string, fontSize = 48, fontFace = 'Arial', textColor = 'rgba(255, 255, 255, 1.0)'): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
@@ -10,23 +10,19 @@ function createTextTexture(text: string, fontSize = 48, fontFace = 'Arial', text
         throw new Error("Could not get 2D context from canvas");
     }
 
-    // Measure text to size canvas
     context.font = `${fontSize}px ${fontFace}`;
     const metrics = context.measureText(text);
     const textWidth = metrics.width;
-    const textHeight = fontSize; // Approximate height
+    const textHeight = fontSize;
 
-    // Size canvas slightly larger than text
-    canvas.width = textWidth + 10; // Add some padding
+    canvas.width = textWidth + 10;
     canvas.height = textHeight + 10;
 
-    // Re-apply font settings after resize
+    // Re-apply settings after resize
     context.font = `${fontSize}px ${fontFace}`;
     context.fillStyle = textColor;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
-
-    // Draw text centered
     context.fillText(text, canvas.width / 2, canvas.height / 2);
 
     const texture = new THREE.CanvasTexture(canvas);
@@ -35,22 +31,61 @@ function createTextTexture(text: string, fontSize = 48, fontFace = 'Arial', text
 }
 
 /**
- * Creates a billboard sprite for interaction prompts.
+ * Manages an interaction prompt billboard sprite.
  */
-export function createInteractionBillboard(): THREE.Sprite {
-    const texture = createTextTexture('Click to Interact');
-    const material = new THREE.SpriteMaterial({ map: texture, depthTest: false, depthWrite: false }); // depthTest false to render on top
-    const sprite = new THREE.Sprite(material);
-    // Make billboard smaller (approx 1/3rd of original size)
-    sprite.scale.set(1 / 3, 0.5 / 3, 1); // Adjust scale as needed
-    sprite.position.set(0, 0, 0); // Initial position
-    sprite.visible = false; // Initially hidden
-    sprite.name = "interactionBillboard";
-    // Render on top of other objects
-    sprite.renderOrder = 999;
-    material.depthTest = false;
-    material.depthWrite = false;
+export class InteractionPrompt {
+    private sprite: THREE.Sprite;
+    private tempWorldPosition = new THREE.Vector3(); // Reusable vector for calculations
 
+    constructor(text: string = 'Click to Interact') {
+        const texture = createTextTexture(text);
+        const material = new THREE.SpriteMaterial({
+            map: texture,
+            depthTest: false, // Render on top
+            depthWrite: false,
+            sizeAttenuation: true // Scale with distance (optional, adjust as needed)
+        });
+        this.sprite = new THREE.Sprite(material);
+        // Make billboard smaller
+        this.sprite.scale.set(1 / 3, 0.5 / 3, 1);
+        this.sprite.position.set(0, 0, 0);
+        this.sprite.visible = false;
+        this.sprite.name = "interactionBillboard";
+        this.sprite.renderOrder = 999; // Ensure it renders on top
+    }
 
-    return sprite;
+    /**
+     * Gets the underlying THREE.Sprite object to add to the scene.
+     */
+    public getElement(): THREE.Sprite {
+        return this.sprite;
+    }
+
+    /**
+     * Updates the prompt's visibility and position based on a target object.
+     * @param targetObject The object to position the prompt near (e.g., a doorknob), or null to hide.
+     * @param verticalOffset How far above the target's center to place the prompt.
+     */
+    public update(targetObject: THREE.Object3D | null, verticalOffset: number = 0.3): void {
+        if (targetObject) {
+            targetObject.getWorldPosition(this.tempWorldPosition);
+            this.sprite.position.copy(this.tempWorldPosition);
+            this.sprite.position.y += verticalOffset;
+            this.sprite.visible = true;
+        } else {
+            this.sprite.visible = false;
+        }
+    }
+
+    public show(): void {
+        this.sprite.visible = true;
+    }
+
+    public hide(): void {
+        this.sprite.visible = false;
+    }
+
+    public setPosition(position: THREE.Vector3): void {
+        this.sprite.position.copy(position);
+    }
 }

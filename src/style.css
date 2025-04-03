@@ -2,6 +2,7 @@
 body {
   margin: 0;
   overflow: hidden; /* Prevent scrollbars from canvas */
+  position: relative; /* Needed for absolute positioning of UI */
 }
 
 /* Ensure canvas fills the screen */
@@ -9,4 +10,28 @@ canvas {
   display: block; /* Remove potential extra space below canvas */
   width: 100vw;
   height: 100vh;
+}
+
+/* Inventory UI Container */
+#inventory-ui {
+  position: absolute; /* Position over the canvas */
+  bottom: 20px;       /* Distance from bottom */
+  left: 50%;          /* Center horizontally */
+  transform: translateX(-50%); /* Adjust centering */
+  display: flex;      /* Arrange slots horizontally */
+  gap: 10px;          /* Space between slots */
+  padding: 5px;
+  background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent background */
+  border-radius: 5px;
+  pointer-events: none; /* Allow clicks to pass through to canvas */
+}
+
+/* Individual Inventory Slot */
+.inventory-slot {
+  width: 50px;
+  height: 50px;
+  border: 2px solid rgba(255, 255, 255, 0.5); /* White border */
+  background-color: rgba(0, 0, 0, 0.4); /* Darker background */
+  border-radius: 3px;
+  /* Add styles for item icons later if needed */
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createPlanterPot } from './PlanterPot'; // Import the pot creator
 
 // Simple function to create a basic house mesh (Group)
 export function createHouse(
@@ -155,6 +156,19 @@ export function createHouse(
     const bedHeadZ = -baseDepth / 2 + wallThickness * 1.5;
     nsMesh.position.set(bedMesh.position.x - bedWidth / 2 - nsWidth / 2 - 0.1, nsHeight / 2, bedHeadZ + nsDepth / 2);
     interiorGroup.add(nsMesh);
+
+    // Planter Pots
+    const potSpacing = 1.0;
+    const potStartZ = baseDepth / 2 - 1.0; // Place near front wall
+    const potPosX = -baseWidth / 2 + 0.7; // Place along left wall
+
+    for (let i = 0; i < 3; i++) {
+        const pot = createPlanterPot(
+            new THREE.Vector3(potPosX, 0, potStartZ - i * potSpacing) // Position on floor (local to interiorGroup)
+        );
+        interiorGroup.add(pot);
+    }
+
 
     houseGroup.add(interiorGroup);
 

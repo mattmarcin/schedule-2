@@ -4,7 +4,8 @@ import { Ground } from './Ground';
 import { Skybox } from './Skybox';
 import { ControlsManager } from './ControlsManager';
 import { createHouse } from './House'; // Import the house creation function
-import { createInteractionBillboard } from './Utils'; // Import billboard utility
+import { InteractionPrompt } from './Utils'; // Import billboard CLASS
+import { InventoryManager } from './InventoryManager'; // Import inventory manager
 
 export class Game {
     private sceneManager: SceneManager;
@@ -14,8 +15,9 @@ export class Game {
     private clock: THREE.Clock;
     private raycaster: THREE.Raycaster;
     private pointer: THREE.Vector2;
-    private interactionBillboard: THREE.Sprite; // Billboard sprite
+    private interactionPrompt: InteractionPrompt; // Use the new class
     private currentlyHoveredDoor: THREE.Mesh | null = null; // Track hovered door
+    private inventoryManager: InventoryManager; // Add inventory manager instance
 
     constructor() {
         this.sceneManager = new SceneManager();
@@ -31,9 +33,9 @@ export class Game {
         // Shorter range for hover detection than click interaction
         this.raycaster.far = 5;
 
-        // Create and add billboard
-        this.interactionBillboard = createInteractionBillboard();
-        this.sceneManager.scene.add(this.interactionBillboard);
+        // Create and add interaction prompt
+        this.interactionPrompt = new InteractionPrompt('Click to Interact');
+        this.sceneManager.scene.add(this.interactionPrompt.getElement());
 
         // Add the controls object to the scene
         this.sceneManager.scene.add(this.controlsManager.getControls().getObject());
@@ -46,6 +48,9 @@ export class Game {
 
         // Add click listener for interactions
         window.addEventListener('pointerdown', this.onPointerDown.bind(this), false);
+
+        // Initialize Inventory UI
+        this.inventoryManager = new InventoryManager();
     }
 
     private animate(): void {
@@ -64,8 +69,8 @@ export class Game {
     }
 
     private updateInteractionPrompt(): void {
+        let foundInteractable = false;
         this.currentlyHoveredDoor = null; // Reset hover state
-        this.interactionBillboard.visible = false; // Hide by default
 
         if (!this.controlsManager.controls.isLocked) {
             return; // Don't show prompts if pointer isn't locked
@@ -84,19 +89,18 @@ export class Game {
                 this.currentlyHoveredDoor = door; // Store hovered door for click handler
 
                 // Find the doorknob (child of the door)
+                // Find the doorknob to position the prompt
                 const doorknob = door.getObjectByName("doorknob");
-                if (doorknob) {
-                    // Calculate world position of doorknob
-                    const knobWorldPosition = new THREE.Vector3();
-                    doorknob.getWorldPosition(knobWorldPosition);
-
-                    // Position billboard slightly above the doorknob
-                    this.interactionBillboard.position.copy(knobWorldPosition);
-                    this.interactionBillboard.position.y += 0.3; // Adjust vertical offset
-                    this.interactionBillboard.visible = true;
-                }
+                // Pass doorknob if found, otherwise null (which hides the prompt)
+                this.interactionPrompt.update(doorknob || null);
+                foundInteractable = true;
                 break; // Found the closest interactable door
             }
+        }
+
+        // If no interactable was found hovering, ensure prompt is hidden
+        if (!foundInteractable) {
+            this.interactionPrompt.hide();
         }
     }
 
