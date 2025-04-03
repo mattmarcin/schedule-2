@@ -70,7 +70,12 @@ export class InventoryManager {
         if (countElement) {
             // Show count if it's greater than 0
             if (data.count > 0) {
-                countElement.textContent = data.count.toString();
+                // Special formatting for cash slot (assuming index 4)
+                if (slotIndex === 4) {
+                    countElement.textContent = `$${data.count}`;
+                } else {
+                    countElement.textContent = data.count.toString();
+                }
                 countElement.style.display = 'block';
             } else {
                 countElement.textContent = '';
