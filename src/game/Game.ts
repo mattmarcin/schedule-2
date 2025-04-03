@@ -24,7 +24,7 @@ export class Game {
     private planterPots: THREE.Mesh[] = [];
     private progressBarContainer: HTMLElement | null = null;
     private progressBarFill: HTMLElement | null = null;
-    private readonly GROWTH_DURATION_MS = 60 * 1000;
+    private readonly GROWTH_DURATION_MS = 20 * 1000; // Match PlanterPot.ts
     private readonly baggieSlotIndex = 3; // Define index for baggie item (0-based)
 
     constructor() {

@@ -58,12 +58,13 @@ export class InventoryManager {
         const countElement = slot.querySelector('.inventory-slot-count') as HTMLElement;
 
         if (iconElement) {
-            if (data.icon) {
+            // Only show icon if icon URL exists AND count is greater than 0
+            if (data.icon && data.count > 0) {
                 iconElement.style.backgroundImage = `url(${data.icon})`;
                 iconElement.style.display = 'block';
             } else {
                 iconElement.style.backgroundImage = 'none';
-                iconElement.style.display = 'none';
+                iconElement.style.display = 'none'; // Hide icon if no icon URL or count is 0
             }
         }
         if (countElement) {
@@ -88,7 +89,7 @@ export class InventoryManager {
             return;
         }
         this.slotData[slotIndex] = {
-            icon: count > 0 ? iconUrl : null, // Remove icon if count is 0
+            icon: iconUrl, // Always store the icon URL if provided
             count: count
         };
         this.updateSlotVisuals(slotIndex);

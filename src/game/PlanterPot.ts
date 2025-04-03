@@ -16,7 +16,7 @@ const WET_SOIL_COLOR = 0x402E26;
 
 // Growth times (in milliseconds)
 const GROWTH_STAGE_1_TIME = 5 * 1000; // 5 seconds
-const GROWTH_STAGE_2_TIME = 60 * 1000; // 60 seconds (maturity)
+const GROWTH_STAGE_2_TIME = 20 * 1000; // 20 seconds (maturity)
 
 // Plant colors
 const LEAF_COLOR = 0x008000; // Green
