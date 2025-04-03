@@ -12,8 +12,7 @@ import { addSoilToPot, waterPotSoil, addSeedToPot, updatePlantGrowth, resetPot }
 export class Game {
     private sceneManager: SceneManager;
     private controlsManager: ControlsManager;
-    private ground: Ground;
-    private skybox: Skybox;
+    // Removed unused _ground and _skybox properties
     private clock: THREE.Clock;
     private raycaster: THREE.Raycaster;
     private pointer: THREE.Vector2;
@@ -34,8 +33,8 @@ export class Game {
             this.sceneManager.camera,
             this.sceneManager.renderer.domElement
         );
-        this.ground = new Ground(this.sceneManager.scene);
-        this.skybox = new Skybox(this.sceneManager.scene);
+        new Ground(this.sceneManager.scene); // Initialize directly without storing reference
+        new Skybox(this.sceneManager.scene); // Initialize directly without storing reference
         this.clock = new THREE.Clock();
         this.raycaster = new THREE.Raycaster();
         this.pointer = new THREE.Vector2();
@@ -128,8 +127,10 @@ export class Game {
         const holdingSoil = this.inventoryManager.getSelectedSlotIndex() === 0;
         const holdingWateringCan = this.inventoryManager.getSelectedSlotIndex() === 1;
         const holdingSeedVial = this.inventoryManager.getSelectedSlotIndex() === 2;
+        // const baggieSlotIndex = 3; // Remove duplicate/unused local declaration
+        // const baggieSlotIndex = 3; // Remove unused local declaration (it's a class property)
         // const baggieSlotIndex = 3; // No longer needed here
-        const baggieSlotIndex = 3; // Define index for baggie
+        // Removed duplicate local declaration of baggieSlotIndex
 
         for (const intersect of intersects) {
             const obj = intersect.object;
@@ -229,7 +230,7 @@ export class Game {
         console.log(`Found ${this.planterPots.length} planter pots.`);
     }
 
-    private onPointerDown(event: PointerEvent): void {
+    private onPointerDown(_event: PointerEvent): void { // Mark event as unused
         // Interact only if pointer is locked and hovering over a door
         if (this.controlsManager.controls.isLocked && this.currentlyHoveredDoor) {
             this.toggleDoor(this.currentlyHoveredDoor);

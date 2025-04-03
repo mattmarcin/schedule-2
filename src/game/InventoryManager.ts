@@ -67,12 +67,13 @@ export class InventoryManager {
             }
         }
         if (countElement) {
-            if (data.count > 1) { // Only show count if more than 1
+            // Show count if it's greater than 0
+            if (data.count > 0) {
                 countElement.textContent = data.count.toString();
                 countElement.style.display = 'block';
             } else {
                 countElement.textContent = '';
-                countElement.style.display = 'none';
+                countElement.style.display = 'none'; // Hide count if 0
             }
         }
     }
@@ -99,16 +100,16 @@ export class InventoryManager {
             console.warn(`Invalid slot index for addItemCount: ${slotIndex}`);
             return;
         }
-        // Ensure item exists before adding count
-        if (this.slotData[slotIndex].icon && this.slotData[slotIndex].count > 0) {
-             this.slotData[slotIndex].count += amount;
-             this.updateSlotVisuals(slotIndex);
-        } else if (this.slotData[slotIndex].icon && amount > 0) {
-            // If adding to an empty slot that has an icon defined (e.g., initial setup)
-            this.slotData[slotIndex].count = amount;
+        // Check if the slot is defined to hold *something* (has an icon)
+        if (this.slotData[slotIndex].icon) {
+            this.slotData[slotIndex].count += amount;
+            // Ensure count doesn't go below zero if amount is negative (though not used yet)
+            if (this.slotData[slotIndex].count < 0) {
+                this.slotData[slotIndex].count = 0;
+            }
             this.updateSlotVisuals(slotIndex);
         } else {
-            console.warn(`Cannot add count to empty slot ${slotIndex} without setting an item first.`);
+            console.warn(`Cannot add count to slot ${slotIndex} as it has no item icon defined.`);
         }
     }
 
