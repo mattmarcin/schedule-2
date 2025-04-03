@@ -33,5 +33,25 @@ canvas {
   border: 2px solid rgba(255, 255, 255, 0.5); /* White border */
   background-color: rgba(0, 0, 0, 0.4); /* Darker background */
   border-radius: 3px;
-  /* Add styles for item icons later if needed */
+  position: relative; /* Needed for absolute positioning of icon */
+  overflow: hidden; /* Ensure icon stays within bounds */
+}
+
+/* Style for the inner div that holds the icon background */
+.inventory-slot-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain; /* Scale icon down to fit */
+  background-repeat: no-repeat;
+  background-position: center;
+  display: none; /* Hidden by default */
+}
+
+/* Style for the selected slot */
+.inventory-slot.selected {
+  border-color: #ffff00; /* Yellow border for selected */
+  box-shadow: 0 0 5px #ffff00; /* Add a glow effect */
 }

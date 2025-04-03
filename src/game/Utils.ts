@@ -35,10 +35,12 @@ function createTextTexture(text: string, fontSize = 48, fontFace = 'Arial', text
  */
 export class InteractionPrompt {
     private sprite: THREE.Sprite;
-    private tempWorldPosition = new THREE.Vector3(); // Reusable vector for calculations
+    private tempWorldPosition = new THREE.Vector3();
+    private currentText: string = '';
 
     constructor(text: string = 'Click to Interact') {
-        const texture = createTextTexture(text);
+        this.currentText = text;
+        const texture = createTextTexture(this.currentText);
         const material = new THREE.SpriteMaterial({
             map: texture,
             depthTest: false, // Render on top
@@ -88,4 +90,20 @@ export class InteractionPrompt {
     public setPosition(position: THREE.Vector3): void {
         this.sprite.position.copy(position);
     }
-}
+
+    /**
+     * Sets the text displayed on the prompt. Regenerates the texture.
+     */
+    public setText(text: string): void {
+        if (text === this.currentText || !this.sprite || !this.sprite.material) return; // No change needed or not ready
+
+        this.currentText = text;
+        const oldTexture = (this.sprite.material as THREE.SpriteMaterial).map;
+        // Create and apply new texture
+        (this.sprite.material as THREE.SpriteMaterial).map = createTextTexture(this.currentText);
+        this.sprite.material.needsUpdate = true;
+        // Dispose old texture after new one is assigned
+        oldTexture?.dispose();
+    }
+
+} // End of InteractionPrompt class
