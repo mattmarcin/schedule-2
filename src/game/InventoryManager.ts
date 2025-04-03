@@ -1,11 +1,12 @@
 /**
- * Manages the basic inventory UI elements.
+ * Manages the basic inventory UI elements, including item counts.
  */
 export class InventoryManager {
     private uiContainer: HTMLElement;
     private slots: HTMLElement[] = [];
+    private slotData: { icon: string | null, count: number }[] = []; // Store icon and count
     private maxSlots: number;
-    private selectedSlotIndex: number | null = null; // Track selected slot
+    private selectedSlotIndex: number | null = null;
 
     constructor(containerId: string = 'inventory-ui', numSlots: number = 5) {
         const container = document.getElementById(containerId);
@@ -15,73 +16,122 @@ export class InventoryManager {
         this.uiContainer = container;
         this.maxSlots = numSlots;
 
+        // Initialize slot data
+        for (let i = 0; i < numSlots; i++) {
+            this.slotData.push({ icon: null, count: 0 });
+        }
+
         this.createSlots();
     }
 
     private createSlots(): void {
-        this.uiContainer.innerHTML = ''; // Clear existing slots if any
+        this.uiContainer.innerHTML = ''; // Clear existing slots
         this.slots = [];
         for (let i = 0; i < this.maxSlots; i++) {
             const slotElement = document.createElement('div');
             slotElement.classList.add('inventory-slot');
             slotElement.dataset.slotIndex = i.toString();
-            // Add inner element for icon background
+
+            // Icon element
             const iconElement = document.createElement('div');
             iconElement.classList.add('inventory-slot-icon');
             slotElement.appendChild(iconElement);
 
+            // Count element
+            const countElement = document.createElement('div');
+            countElement.classList.add('inventory-slot-count');
+            slotElement.appendChild(countElement);
+
             this.uiContainer.appendChild(slotElement);
             this.slots.push(slotElement);
+            this.updateSlotVisuals(i); // Update visuals based on initial data
         }
     }
 
-    /**
-     * Sets the icon for a specific inventory slot.
-     * @param slotIndex The index of the slot (0-based).
-     * @param iconUrl The URL of the icon image (relative to public folder or absolute).
-     */
-    public setItemIcon(slotIndex: number, iconUrl: string | null): void {
-        if (slotIndex < 0 || slotIndex >= this.slots.length) {
-            console.warn(`Invalid slot index for setItemIcon: ${slotIndex}`);
-            return;
-        }
+    /** Updates the visual appearance (icon, count) of a single slot */
+    private updateSlotVisuals(slotIndex: number): void {
+        if (slotIndex < 0 || slotIndex >= this.slots.length) return;
+
         const slot = this.slots[slotIndex];
+        const data = this.slotData[slotIndex];
         const iconElement = slot.querySelector('.inventory-slot-icon') as HTMLElement;
+        const countElement = slot.querySelector('.inventory-slot-count') as HTMLElement;
+
         if (iconElement) {
-            if (iconUrl) {
-                iconElement.style.backgroundImage = `url(${iconUrl})`;
+            if (data.icon) {
+                iconElement.style.backgroundImage = `url(${data.icon})`;
                 iconElement.style.display = 'block';
             } else {
                 iconElement.style.backgroundImage = 'none';
                 iconElement.style.display = 'none';
             }
         }
+        if (countElement) {
+            if (data.count > 1) { // Only show count if more than 1
+                countElement.textContent = data.count.toString();
+                countElement.style.display = 'block';
+            } else {
+                countElement.textContent = '';
+                countElement.style.display = 'none';
+            }
+        }
     }
 
     /**
-     * Selects an inventory slot, highlighting it and unhighlighting others.
-     * @param slotIndex The index of the slot to select (0-based), or null to deselect all.
+     * Sets the item (icon and count) for a specific inventory slot.
+     * Use count = 0 or iconUrl = null to clear the slot.
      */
+    public setItem(slotIndex: number, iconUrl: string | null, count: number = 1): void {
+        if (slotIndex < 0 || slotIndex >= this.slots.length) {
+            console.warn(`Invalid slot index for setItem: ${slotIndex}`);
+            return;
+        }
+        this.slotData[slotIndex] = {
+            icon: count > 0 ? iconUrl : null, // Remove icon if count is 0
+            count: count
+        };
+        this.updateSlotVisuals(slotIndex);
+    }
+
+    /** Adds to the count of an item in a slot. Assumes item type matches. */
+    public addItemCount(slotIndex: number, amount: number = 1): void {
+         if (slotIndex < 0 || slotIndex >= this.slots.length) {
+            console.warn(`Invalid slot index for addItemCount: ${slotIndex}`);
+            return;
+        }
+        // Ensure item exists before adding count
+        if (this.slotData[slotIndex].icon && this.slotData[slotIndex].count > 0) {
+             this.slotData[slotIndex].count += amount;
+             this.updateSlotVisuals(slotIndex);
+        } else if (this.slotData[slotIndex].icon && amount > 0) {
+            // If adding to an empty slot that has an icon defined (e.g., initial setup)
+            this.slotData[slotIndex].count = amount;
+            this.updateSlotVisuals(slotIndex);
+        } else {
+            console.warn(`Cannot add count to empty slot ${slotIndex} without setting an item first.`);
+        }
+    }
+
+    /** Gets the current count of items in a slot */
+    public getItemCount(slotIndex: number): number {
+         if (slotIndex < 0 || slotIndex >= this.slots.length) return 0;
+         return this.slotData[slotIndex].count;
+    }
+
+    /** Selects an inventory slot */
     public selectSlot(slotIndex: number | null): void {
-        // Deselect previous slot
         if (this.selectedSlotIndex !== null && this.slots[this.selectedSlotIndex]) {
             this.slots[this.selectedSlotIndex].classList.remove('selected');
         }
-
-        // Select new slot
         if (slotIndex !== null && slotIndex >= 0 && slotIndex < this.slots.length) {
             this.slots[slotIndex].classList.add('selected');
             this.selectedSlotIndex = slotIndex;
         } else {
-            this.selectedSlotIndex = null; // Deselected all
+            this.selectedSlotIndex = null;
         }
     }
 
     public getSelectedSlotIndex(): number | null {
         return this.selectedSlotIndex;
     }
-
-    // --- Future methods ---
-    // addItem(itemData, slotIndex) { ... } // Would likely call setItemIcon
-    // removeItem(slotIndex) { ... } // Would likely call setItemIcon(index, null)
 }

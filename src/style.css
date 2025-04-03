@@ -55,3 +55,36 @@ canvas {
   border-color: #ffff00; /* Yellow border for selected */
   box-shadow: 0 0 5px #ffff00; /* Add a glow effect */
 }
+
+/* Style for the item count text */
+.inventory-slot-count {
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  text-shadow: 1px 1px 1px black; /* Make text readable */
+  display: none; /* Hidden by default, shown by JS if count > 1 */
+}
+
+/* Growth Progress Bar */
+#progress-bar-container {
+  position: absolute;
+  /* Position will be set by JS */
+  width: 50px; /* Match inventory slot width */
+  height: 8px;
+  background-color: rgba(50, 50, 50, 0.7); /* Dark background */
+  border: 1px solid rgba(200, 200, 200, 0.5);
+  border-radius: 3px;
+  overflow: hidden;
+  pointer-events: none; /* Allow clicks through */
+  /* display: none; Set by default in HTML */
+}
+
+#progress-bar-fill {
+  width: 0%; /* Starts empty, width set by JS */
+  height: 100%;
+  background-color: #4CAF50; /* Green fill */
+  transition: width 0.5s linear; /* Smooth transition for updates */
+}

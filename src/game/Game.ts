@@ -7,7 +7,7 @@ import { createHouse } from './House'; // Import the house creation function
 import { InteractionPrompt } from './Utils'; // Import billboard CLASS
 import { InventoryManager } from './InventoryManager'; // Import inventory manager
 import { createHeldItemMesh, HeldItemType } from './HeldItem'; // Import type as well
-import { addSoilToPot, waterPotSoil, addSeedToPot } from './PlanterPot'; // Import pot functions
+import { addSoilToPot, waterPotSoil, addSeedToPot, updatePlantGrowth, resetPot } from './PlanterPot'; // Import all pot functions
 
 export class Game {
     private sceneManager: SceneManager;
@@ -22,6 +22,11 @@ export class Game {
     private currentlyHoveredPot: THREE.Mesh | null = null; // Track hovered pot
     private inventoryManager: InventoryManager;
     private currentHeldItemMesh: THREE.Mesh | null = null;
+    private planterPots: THREE.Mesh[] = [];
+    private progressBarContainer: HTMLElement | null = null;
+    private progressBarFill: HTMLElement | null = null;
+    private readonly GROWTH_DURATION_MS = 60 * 1000;
+    private readonly baggieSlotIndex = 3; // Define index for baggie item (0-based)
 
     constructor() {
         this.sceneManager = new SceneManager();
@@ -61,6 +66,10 @@ export class Game {
         // Initialize Inventory UI & Items
         this.inventoryManager = new InventoryManager();
         this.setupInitialInventory(); // Add items to inventory UI
+
+        // Get progress bar elements
+        this.progressBarContainer = document.getElementById('progress-bar-container');
+        this.progressBarFill = document.getElementById('progress-bar-fill');
     }
 
     private handleKeyDown(event: KeyboardEvent): void {
@@ -88,17 +97,23 @@ export class Game {
         // Update controls
         this.controlsManager.update(deltaTime);
 
-        // Handle interaction prompts (billboard)
-        this.updateInteractionPrompt();
+        // Update plant growth
+        const currentTime = Date.now();
+        this.planterPots.forEach(pot => updatePlantGrowth(pot, currentTime));
+
+        // Handle interaction prompts and progress bar
+        this.updateInteractionUI(currentTime);
 
         // Render the scene
         this.sceneManager.render();
     }
 
-    private updateInteractionPrompt(): void {
+    // Renamed function to reflect it handles more than just the prompt
+    private updateInteractionUI(currentTime: number): void {
         let foundInteractable = false; // Flag to check if any prompt should be shown
         this.currentlyHoveredDoor = null; // Reset hover states
         this.currentlyHoveredPot = null;
+        let showProgressBar = false; // Flag to control progress bar visibility
 
         if (!this.controlsManager.controls.isLocked) {
             return; // Don't show prompts if pointer isn't locked
@@ -113,6 +128,8 @@ export class Game {
         const holdingSoil = this.inventoryManager.getSelectedSlotIndex() === 0;
         const holdingWateringCan = this.inventoryManager.getSelectedSlotIndex() === 1;
         const holdingSeedVial = this.inventoryManager.getSelectedSlotIndex() === 2;
+        // const baggieSlotIndex = 3; // No longer needed here
+        const baggieSlotIndex = 3; // Define index for baggie
 
         for (const intersect of intersects) {
             const obj = intersect.object;
@@ -155,15 +172,32 @@ export class Game {
                     foundInteractable = true;
                     break; // Found pot interaction
                 }
+                // Check for harvesting
+                else if (pot.userData.isMature) {
+                    this.currentlyHoveredPot = pot;
+                    this.interactionPrompt.setText("(E): Harvest");
+                    this.interactionPrompt.update(pot, 0.3);
+                    foundInteractable = true;
+                    break; // Found pot interaction
+                }
+                // Check if pot is currently growing (for progress bar)
+                else if (pot.userData.hasSeed && pot.userData.growthStartTime !== null && !pot.userData.isMature) {
+                     this.currentlyHoveredPot = pot; // Still track for progress bar even if no action prompt
+                     showProgressBar = true;
+                     // Don't break here, allow checking for door prompts etc.
+                }
             }
 
-            // Add other interactable object checks here (e.g., picking up items)
+            // Add other interactable object checks here
         }
 
-        // If no interactable was found hovering, ensure prompt is hidden
+        // Hide interaction prompt if no specific interaction found
         if (!foundInteractable) {
             this.interactionPrompt.hide();
         }
+
+        // Update and show/hide progress bar
+        this.updateProgressBar(showProgressBar, currentTime);
     }
 
 
@@ -182,10 +216,17 @@ export class Game {
             const house = createHouse(adjustedPos, color);
             if (this.sceneManager && this.sceneManager.scene) {
                  this.sceneManager.scene.add(house);
+                 // Find and store pots from this house
+                 house.traverse((child) => {
+                     if (child instanceof THREE.Mesh && child.name === 'planterPot') {
+                         this.planterPots.push(child);
+                     }
+                 });
             } else {
                 console.error("SceneManager or Scene not initialized when adding houses.");
             }
         });
+        console.log(`Found ${this.planterPots.length} planter pots.`);
     }
 
     private onPointerDown(event: PointerEvent): void {
@@ -241,15 +282,25 @@ export class Game {
                  // this.handleInventorySelection(null); // Deselect maybe?
              }
         }
+        // Check for harvesting
+        else if (this.currentlyHoveredPot && this.currentlyHoveredPot.userData.isMature) {
+            resetPot(this.currentlyHoveredPot);
+            this.inventoryManager.addItemCount(this.baggieSlotIndex, 1); // Use class property
+            console.log("Harvested plant via E key");
+            this.interactionPrompt.hide(); // Hide prompt
+            // Progress bar will be hidden automatically on next frame by updateInteractionUI
+        }
         // Add other 'E' key interactions here
     }
 
     private setupInitialInventory(): void {
         // Add soil to the first slot
         // IMPORTANT: Ensure icons exist in /public/icons/
-        this.inventoryManager.setItemIcon(0, '/icons/soil.png');      // Slot 1 (Index 0)
-        this.inventoryManager.setItemIcon(1, '/icons/wateringcan.png'); // Slot 2 (Index 1)
-        this.inventoryManager.setItemIcon(2, '/icons/vial.png');      // Slot 3 (Index 2)
+        // Use setItem(index, iconUrl, initialCount)
+        this.inventoryManager.setItem(0, '/icons/soil.png', 1);      // Slot 1 (Index 0) - Assume 1 bag
+        this.inventoryManager.setItem(1, '/icons/wateringcan.png', 1); // Slot 2 (Index 1) - Assume 1 can
+        this.inventoryManager.setItem(2, '/icons/vial.png', 1);      // Slot 3 (Index 2) - Assume 1 vial
+        this.inventoryManager.setItem(3, '/icons/baggie.png', 0);     // Slot 4 (Index 3) - Baggie, starts empty
     }
 
     private handleInventorySelection(slotIndex: number): void {
@@ -292,5 +343,33 @@ export class Game {
             this.currentHeldItemMesh = newMesh;
         }
     }
+
+    private updateProgressBar(show: boolean, currentTime: number): void {
+        if (!this.progressBarContainer || !this.progressBarFill) return;
+
+        if (show && this.currentlyHoveredPot && this.currentlyHoveredPot.userData.growthStartTime && !this.currentlyHoveredPot.userData.isMature) {
+            const elapsedTime = currentTime - this.currentlyHoveredPot.userData.growthStartTime;
+            const progress = Math.min(100, (elapsedTime / this.GROWTH_DURATION_MS) * 100);
+            this.progressBarFill.style.width = `${progress}%`;
+
+            // Position progress bar below the pot
+            const potPosition = new THREE.Vector3();
+            this.currentlyHoveredPot.getWorldPosition(potPosition);
+            const screenPosition = potPosition.clone().project(this.sceneManager.camera);
+
+            // Convert normalized device coordinates (-1 to +1) to screen pixels (0 to width/height)
+            const screenX = (screenPosition.x * 0.5 + 0.5) * window.innerWidth;
+            const screenY = (-screenPosition.y * 0.5 + 0.5) * window.innerHeight;
+
+            // Adjust position to center the bar below the pot
+            this.progressBarContainer.style.left = `${screenX - this.progressBarContainer.offsetWidth / 2}px`;
+            this.progressBarContainer.style.top = `${screenY + 15}px`; // Offset below the pot center
+
+            this.progressBarContainer.style.display = 'block';
+        } else {
+            this.progressBarContainer.style.display = 'none';
+        }
+    }
+
 
 } // End of Game class
