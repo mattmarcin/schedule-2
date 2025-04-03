@@ -1,0 +1,12 @@
+/* Remove default browser margin */
+body {
+  margin: 0;
+  overflow: hidden; /* Prevent scrollbars from canvas */
+}
+
+/* Ensure canvas fills the screen */
+canvas {
+  display: block; /* Remove potential extra space below canvas */
+  width: 100vw;
+  height: 100vh;
+}
